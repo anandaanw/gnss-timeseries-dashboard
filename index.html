@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>GNSS Time Series | PRIDE PPP-AR</title>
+<style>
+    :root { color-scheme: light; --ink:#17212b; --muted:#5b6773; --line:#d9e0e7; --panel:#ffffff; --page:#f3f6f9; --accent:#135d89; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--page); color:var(--ink); font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    header { background:#fff; border-bottom:1px solid var(--line); padding:24px clamp(16px,4vw,48px) 20px; }
+    .header-inner { max-width:1440px; margin:auto; }
+    h1 { font-size:clamp(1.45rem,3vw,2rem); line-height:1.2; margin:0 0 8px; }
+    .subtitle { margin:0; color:var(--muted); }
+    .toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:18px; }
+    input { width:min(100%,360px); min-height:44px; padding:10px 12px; border:1px solid #b8c4cf; border-radius:10px; background:white; color:var(--ink); font:inherit; }
+    .count { color:var(--muted); font-size:.92rem; }
+    main { max-width:1440px; margin:0 auto; padding:24px clamp(16px,4vw,48px) 36px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:20px; }
+    .station-card { min-width:0; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:0 2px 8px rgba(20,40,60,.04); }
+    .card-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    h2 { font-size:1.2rem; margin:0; }
+    .badge { color:#164e70; background:#e6f2f9; border-radius:999px; padding:4px 9px; font-size:.78rem; white-space:nowrap; }
+    .gif-link { display:block; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:white; }
+    img { display:block; width:100%; height:auto; }
+    .updated { margin:12px 0 4px; color:var(--muted); font-size:.85rem; }
+    .open-link { color:var(--accent); font-weight:600; font-size:.92rem; }
+    .empty-state { background:white; border:1px dashed #aebbc7; border-radius:14px; padding:28px; }
+    .empty-state p { color:var(--muted); }
+    footer { max-width:1440px; margin:auto; padding:0 clamp(16px,4vw,48px) 28px; color:var(--muted); font-size:.82rem; }
+    @media(prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; } }
+  
+    .mode-controls { display:flex; gap:8px; margin:0 0 12px; }
+    .mode-btn { appearance:none; cursor:pointer; font:600 .87rem/1.25 system-ui,sans-serif; border:1px solid #b8c4cf; background:#fff; color:#22435b; border-radius:9px; padding:9px 13px; min-height:38px; }
+    .mode-btn[aria-pressed="true"] { background:var(--accent); color:white; border-color:var(--accent); }
+    .mode-btn:focus-visible { outline:3px solid #f2a54a; outline-offset:2px; }
+    .media-error { color:#9f2934; font-size:.85rem; margin:8px 0 0; }
+    .station-card[hidden] { display:none; }
+
+  .mode-controls { flex-wrap:wrap; }
+  .mode-btn { flex:1; }
+  .station-card { display:flex; flex-direction:column; }
+  .media-link { display:block; }
+  .stats-panel {margin-top:15px;padding-top:14px;border-top:1px solid var(--line);}
+  .stats-panel h3 {font-size:1rem;margin:0 0 8px;}
+  .stats-help {font-size:.78rem;color:var(--muted);margin:2px 0 9px;}
+  .stats-scroll {overflow-x:auto;}
+  .stats-table {width:100%;border-collapse:collapse;font-size:.79rem;white-space:nowrap;}
+  .stats-table th,.stats-table td {padding:6px 7px;text-align:right;border-bottom:1px solid #e9edf1;}
+  .stats-table th:first-child,.stats-table td:first-child {text-align:left;}
+  .stats-table thead {background:#f3f6f9;}
+  .stats-empty {color:var(--muted);font-size:.86rem;}
+  .toolbar-note {font-size:.86rem;color:var(--muted);margin-top:10px;}
+  .important-note {background:#edf5fb;border:1px solid #cbdde9;padding:12px 16px;border-radius:10px;margin:0 0 20px;font-size:.9rem;}
+</style>
+</head>
+<body>
+<header>
+<div class="header-inner">
+<h1>PRIDE PPP-AR · GNSS TIME SERIES</h1>
+<p class="subtitle">Time series PPP Rapid–Final · GIF normalisasi (−1 hingga 1), PNG Displacement (mm), PNG normalisasi, dan statistik hasil pengolahan.</p>
+<div class="toolbar">
+<label for="station-search">Cari stasiun</label>
+<input autocomplete="off" id="station-search" placeholder="Contoh: BAKO" type="search"/>
+<span aria-live="polite" class="count" id="count">7 stasiun tersedia</span>
+</div>
+</div>
+</header>
+<main>
+<section aria-label="Time series per stasiun" class="grid" id="station-grid">
+<article class="station-card" data-station="bako">
+<div class="card-heading">
+<h2>BAKO</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan BAKO" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️ GIF normalisasi</button><button aria-pressed="false" class="mode-btn" data-mode="png" type="button">🖼️ PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF BAKO ukuran penuh" class="gif-link media-link" data-gif="BAKO_Normalized_ENU.gif" data-normalized="BAKO_Normalized_ENU.png" data-png="BAKO_Continuous_ENU.png" href="BAKO_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun BAKO" data-station="BAKO" loading="lazy" src="BAKO_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:08:52 WIB</p>
+<a class="open-link current-file-link" href="BAKO_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik BAKO" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="BAKO"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+<article class="station-card" data-station="cgon">
+<div class="card-heading">
+<h2>CGON</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan CGON" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️ GIF normalisasi</button><button aria-pressed="false" class="mode-btn" data-mode="png" type="button">🖼️ PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF CGON ukuran penuh" class="gif-link media-link" data-gif="CGON_Normalized_ENU.gif" data-normalized="CGON_Normalized_ENU.png" data-png="CGON_Continuous_ENU.png" href="CGON_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun CGON" data-station="CGON" loading="lazy" src="CGON_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:09:18 WIB</p>
+<a class="open-link current-file-link" href="CGON_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik CGON" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="CGON"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+<article class="station-card" data-station="cjkt">
+<div class="card-heading">
+<h2>CJKT</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan CJKT" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️ GIF normalisasi</button><button aria-pressed="false" class="mode-btn" data-mode="png" type="button">🖼️ PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF CJKT ukuran penuh" class="gif-link media-link" data-gif="CJKT_Normalized_ENU.gif" data-normalized="CJKT_Normalized_ENU.png" data-png="CJKT_Continuous_ENU.png" href="CJKT_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun CJKT" data-station="CJKT" loading="lazy" src="CJKT_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:09:44 WIB</p>
+<a class="open-link current-file-link" href="CJKT_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik CJKT" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="CJKT"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+<article class="station-card" data-station="cjku">
+<div class="card-heading">
+<h2>CJKU</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan CJKU" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️ GIF normalisasi</button><button aria-pressed="false" class="mode-btn" data-mode="png" type="button">🖼️ PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF CJKU ukuran penuh" class="gif-link media-link" data-gif="CJKU_Normalized_ENU.gif" data-normalized="CJKU_Normalized_ENU.png" data-png="CJKU_Continuous_ENU.png" href="CJKU_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun CJKU" data-station="CJKU" loading="lazy" src="CJKU_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:10:10 WIB</p>
+<a class="open-link current-file-link" href="CJKU_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik CJKU" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="CJKU"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+<article class="station-card" data-station="ctgr">
+<div class="card-heading">
+<h2>CTGR</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan CTGR" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️ GIF normalisasi</button><button aria-pressed="false" class="mode-btn" data-mode="png" type="button">🖼️ PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF CTGR ukuran penuh" class="gif-link media-link" data-gif="CTGR_Normalized_ENU.gif" data-normalized="CTGR_Normalized_ENU.png" data-png="CTGR_Continuous_ENU.png" href="CTGR_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun CTGR" data-station="CTGR" loading="lazy" src="CTGR_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:10:51 WIB</p>
+<a class="open-link current-file-link" href="CTGR_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik CTGR" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="CTGR"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+<article class="station-card" data-station="ckbj">
+<div class="card-heading">
+<h2>CKBJ</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan CKBJ" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️  GIF normalisasi</button><button aria-pressed="false" class="mode-btn" data-mode="png" type="button">🖼️  PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF CKBJ ukuran penuh" class="gif-link media-link" data-gif="CKBJ_Normalized_ENU.gif" data-normalized="CKBJ_Normalized_ENU.png" data-png="CKBJ_Continuous_ENU.png" href="CKBJ_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun CKBJ" data-station="CKBJ" loading="lazy" src="CKBJ_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:10:51 WIB</p>
+<a class="open-link current-file-link" href="CKBJ_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik CKBJ" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="CKBJ"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+<article class="station-card" data-station="creo">
+<div class="card-heading">
+<h2>CREO</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan CREO" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️   GIF normalisasi</button><button aria-pressed="false" class="mode-btn" data-mode="png" type="button">🖼️   PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF CREO ukuran penuh" class="gif-link media-link" data-gif="CREO_Normalized_ENU.gif" data-normalized="CREO_Normalized_ENU.png" data-png="CREO_Continuous_ENU.png" href="CREO_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun CREO" data-station="CREO" loading="lazy" src="CREO_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:10:51 WIB</p>
+<a class="open-link current-file-link" href="CREO_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik CREO" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="CREO"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+<article class="station-card" data-station="cter">
+<div class="card-heading">
+<h2>CTER</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan CTER" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️   GIF normalisasi</button><button aria-pressed="false" class="mode-btn" data-mode="png" type="button">🖼️   PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF CTER ukuran penuh" class="gif-link media-link" data-gif="CTER_Normalized_ENU.gif" data-normalized="CTER_Normalized_ENU.png" data-png="CTER_Continuous_ENU.png" href="CTER_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun CTER" data-station="CTER" loading="lazy" src="CTER_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:10:51 WIB</p>
+<a class="open-link current-file-link" href="CTER_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik CTER" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="CTER"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+<article class="station-card" data-station="cter">
+<div class="card-heading">
+<h2>CMLE</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan CMLE" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️ GIF normalisasi</button><button aria-pressed="false"
+ class="mode-btn" data-mode="png" type="button">🖼️  PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF CMLE ukuran penuh" class="gif-link media-link" data-gif="CMLE_Normalized_ENU.gif" data-normalized="CMLE_Normalized_ENU.png" data-png="CMLE_Continuous_ENU.png" href="CMLE_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun CMLE" data-station="CMLE" loading="lazy" src="CMLE_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:10:28 WIB</p>
+<a class="open-link current-file-link" href="CMLE_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik CMLE" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="CMLE"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+<article class="station-card" data-station="cthn">
+<div class="card-heading">
+<h2>CTHN</h2>
+<span class="badge">GIF / PNG</span>
+</div>
+<div aria-label="Pilih tampilan CTHN" class="mode-controls" role="group"><button aria-pressed="true" class="mode-btn" data-mode="gif" type="button">🎞️ GIF normalisasi</button><button aria-pressed="false" class="mode-btn" data-mode="png" type="button">🖼️ PNG Displacement (mm)</button><button aria-pressed="false" class="mode-btn" data-mode="normalized" type="button">📊 PNG normalisasi</button></div><a aria-label="Buka GIF CTHN ukuran penuh" class="gif-link media-link" data-gif="CTHN_Normalized_ENU.gif" data-normalized="CTHN_Normalized_ENU.png" data-png="CTHN_Continuous_ENU.png" href="CTHN_Normalized_ENU.gif" rel="noopener" target="_blank">
+<img alt="Time series koordinat toposentrik untuk stasiun CTHN" data-station="CTHN" loading="lazy" src="CTHN_Normalized_ENU.gif"/>
+</a><p class="media-error" hidden=""></p>
+<p class="updated">Diperbarui: 2026-11-05 04:11:17 WIB</p>
+<a class="open-link current-file-link" href="CTHN_Normalized_ENU.gif" rel="noopener" target="_blank">Open ↗</a>
+<section aria-label="Statistik CTHN" class="stats-panel"><h3>Statistik hasil pengolahan</h3><p class="stats-help">Velocity (mm/tahun), RMS residual (mm), dan STD residual (mm).</p><div class="stats-content" data-station="CTHN"><p class="stats-empty">Memuat statistik jika CSV tersedia…</p></div></section></article>
+</section>
+</main>
+<footer>Sumber: grafik keluaran plot_timeseries_enu_revisi.py. Statistik dibaca dari summary_velocity_rms.csv jika tersedia. Tidak ada MP4 atau pengolahan GNSS di browser.</footer>
+
+<script>
+const search = document.getElementById('station-search');
+const cards = [...document.querySelectorAll('.station-card')];
+const count = document.getElementById('count');
+function applySearch() {
+  const query = search.value.trim().toLowerCase();
+  let shown = 0;
+  for (const card of cards) {
+    const visible = card.dataset.station.includes(query);
+    card.hidden = !visible;
+    if (visible) shown++;
+  }
+  count.textContent = `${shown} dari ${cards.length} stasiun ditampilkan`;
+}
+search.addEventListener('input', applySearch);
+applySearch();
+
+for (const card of cards) {
+  const link = card.querySelector('.media-link');
+  const img = link.querySelector('img');
+  const openLink = card.querySelector('.current-file-link');
+  const badge = card.querySelector('.badge');
+  const error = card.querySelector('.media-error');
+  const station = card.dataset.station.toUpperCase();
+  const filenames = {gif:link.dataset.gif,png:link.dataset.png,normalized:link.dataset.normalized};
+  function setMode(mode) {
+    const filename = filenames[mode];
+    const label = mode === 'normalized' ? 'PNG normalisasi' : mode === 'png' ? 'PNG Displacement (mm)' : 'GIF normalisasi';
+    card.querySelectorAll('.mode-btn').forEach(btn => btn.setAttribute('aria-pressed', String(btn.dataset.mode === mode)));
+    error.hidden = true;
+    link.href = filename;
+    link.setAttribute('aria-label', `Buka ${label} ${station} ukuran penuh`);
+    openLink.href = filename;
+    openLink.textContent = `Buka ${label} ukuran penuh ↗`;
+    badge.textContent = label;
+    img.alt = `Time series ${station}, ${label}`;
+    img.src = filename + "?v=" + Date.now();
+  }
+  img.src = img.getAttribute("src").split("?")[0] + "?v=" + Date.now();
+  img.addEventListener('error', () => {
+    error.textContent = `Gambar ${img.getAttribute('src')} belum tersedia. Jalankan script plotting revisi untuk membuatnya.`;
+    error.hidden = false;
+  });
+  img.addEventListener('load', () => { error.hidden = true; });
+  card.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
+}
+
+// Parser CSV RFC4180 sederhana untuk angka/statistik. Tidak membutuhkan library eksternal.
+function parseCSV(text) {
+  const rows=[];let row=[],cell='',quoted=false;
+  for (let i=0;i<text.length;i++) {
+    const c=text[i];
+    if (c==='"') {
+      if (quoted && text[i+1]==='"') {cell+='"';i++;} else quoted=!quoted;
+    } else if (c===',' && !quoted) {row.push(cell);cell='';}
+    else if ((c==='\n'||c==='\r') && !quoted) {
+      if (c==='\r' && text[i+1]==='\n') i++;
+      row.push(cell);if(row.some(v=>v!==''))rows.push(row);row=[];cell='';
+    } else cell+=c;
+  }
+  row.push(cell);if(row.some(v=>v!==''))rows.push(row);
+  if (!rows.length) return [];
+  const headers=rows.shift().map(v=>v.trim());
+  return rows.map(values=>Object.fromEntries(headers.map((h,i)=>[h,values[i]??''])));
+}
+const fmt = val => Number.isFinite(Number(val)) && String(val).trim()!=='' ? Number(val).toFixed(2) : '—';
+function renderStats(rows) {
+  const methods=['rapid','final'];
+  const components=['NORTH','EAST','UP'];
+  for (const panel of document.querySelectorAll('.stats-content')) {
+    const station=panel.dataset.station;
+    const data=rows.filter(r=>String(r.station||'').toUpperCase()===station && methods.includes(String(r.method||'').toLowerCase()));
+    panel.replaceChildren();
+    if (!data.length) {
+      const p=document.createElement('p');p.className='stats-empty';p.textContent='Statistik belum tersedia untuk stasiun ini.';panel.append(p);continue;
+    }
+    const scroll=document.createElement('div');scroll.className='stats-scroll';
+    const table=document.createElement('table');table.className='stats-table';
+    const head=document.createElement('thead');const hr=document.createElement('tr');
+    for (const name of ['Metode / ENU','Velocity','RMS','STD','N']) {const th=document.createElement('th');th.textContent=name;hr.append(th);}head.append(hr);table.append(head);
+    const body=document.createElement('tbody');
+    for(const method of methods)for(const component of components){
+      const r=data.find(d=>String(d.method).toLowerCase()===method && String(d.component).toUpperCase()===component);
+      if(!r)continue;
+      const tr=document.createElement('tr');
+      for(const val of [`${method==='rapid'?'Rapid':'Final'} · ${component}`,fmt(r.velocity_mm_per_year),fmt(r.rms_residual_mm),fmt(r.std_residual_mm),r.n||'—']) {
+        const td=document.createElement('td');td.textContent=val;tr.append(td);
+      }body.append(tr);
+    }
+    table.append(body);scroll.append(table);panel.append(scroll);
+  }
+}
+fetch('summary_velocity_rms.csv',{cache:'no-store'}).then(response=>{
+  if(!response.ok)throw Error('CSV tidak ditemukan');
+  return response.text();
+}).then(csv=>renderStats(parseCSV(csv))).catch(()=>{
+  for(const panel of document.querySelectorAll('.stats-content')) {
+    panel.textContent='CSV statistik belum tersedia di folder dashboard. Grafik GIF/PNG tetap bisa digunakan.';
+    panel.classList.add('stats-empty');
+  }
+});
+// Perbarui tanggal berdasarkan waktu modifikasi file grafik.
+async function updateGraphTimestamps() {
+    const cards = document.querySelectorAll('.station-card');
+
+    for (const card of cards) {
+        const img = card.querySelector('img[data-station]');
+        const updated = card.querySelector('.updated');
+
+        if (!img || !updated) continue;
+
+        const fileUrl = img.getAttribute('src');
+
+        try {
+            const response = await fetch(fileUrl, {
+                method: 'HEAD',
+                cache: 'no-store'
+            });
+
+            if (!response.ok) continue;
+
+            const lastModified = response.headers.get('Last-Modified');
+            if (!lastModified) continue;
+
+            const date = new Date(lastModified);
+
+            updated.textContent = 'Diperbarui: ' +
+                date.toLocaleString('id-ID', {
+                    timeZone: 'Asia/Jakarta',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                }) + ' WIB';
+
+        } catch (error) {
+            console.warn('Gagal membaca tanggal grafik:', error);
+        }
+    }
+}
+
+// Jalankan saat halaman dibuka.
+updateGraphTimestamps();
+</script></body>
+</html>
